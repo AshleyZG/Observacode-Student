@@ -6,6 +6,7 @@ import {
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
 import { requestAPI } from './handler';
+import sharingPlugin from './sharing';
 
 /**
  * Initialization data for the observacode_student extension.
@@ -40,4 +41,4 @@ const plugin: JupyterFrontEndPlugin<void> = {
   }
 };
 
-export default plugin;
+export default [plugin, sharingPlugin];
