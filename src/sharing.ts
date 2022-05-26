@@ -13,7 +13,8 @@ import { WebsocketProvider } from 'y-websocket'
 import * as Y from 'yjs'
 import { ToolbarButton } from '@jupyterlab/apputils';
 import { YCodeCell } from '@jupyterlab/shared-models'; 
-  
+import { v4 as uuid } from 'uuid';
+
 class ButtonExtension implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>{
     createNew(widget: NotebookPanel, context: DocumentRegistry.IContext<INotebookModel>): void | IDisposable {
         function callback(){
@@ -21,21 +22,26 @@ class ButtonExtension implements DocumentRegistry.IWidgetExtension<NotebookPanel
 
             const websocketProvider = new WebsocketProvider(
                 'ws://localhost:1234', 'count-demo', ydoc
-            )
+            );
 
-            const source = (widget.model!.sharedModel.getCell(2) as YCodeCell).ysource;
-            const centralizedSource = ydoc.getText('mysource');
-            centralizedSource.delete(0, centralizedSource.length);
-            const snapshots: Y.Array<string> = ydoc.getArray('snapshots');
-            snapshots.push([""]);
-            centralizedSource.applyDelta(source.toDelta());
+            for (var cell of widget.content.widgets){
+                if (cell.model.metadata.get("exerciseType") === 'solution'){
 
-            source.observe(event => {
-                console.log(source.toJSON());
-                centralizedSource.applyDelta(event.delta);
-                snapshots.push([source.toJSON()]);
-                console.log(centralizedSource.toJSON());
-            })
+                    const ytextCode = new Y.Text((cell.model.sharedModel as YCodeCell).getSource());
+                    ydoc.getMap('shared').set(uuid(), ytextCode);
+        
+                    const source = (cell.model.sharedModel as YCodeCell).ysource;
+        
+                    source.observe(event => {
+                        console.log(source.toJSON());
+        
+                        ytextCode.applyDelta(event.delta);
+        
+                        console.log(ytextCode.toJSON());
+                    })
+                }
+            }
+
 
             ydoc.on('update', update => {
                 console.log('ydoc update');
